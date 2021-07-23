@@ -28,31 +28,55 @@ class App extends Component{
     super();
     this.state = {
       input: '',
+      imageUrl:'',
+      box:{}
     }
   }
+  calculateFaceLocation = (data) => {
+    const clarifaiface = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const image = document.getElementById('inputImage');
+    const width = Number(image.width);
+    const height = Number(image.height);
+    console.log(width, height, clarifaiface);
+    return {
+      lefCol:clarifaiface.left_col * width,
+      topRow:clarifaiface.top_row * height,
+      rightCol: width - (clarifaiface.right_col * width),
+      bottomRow: height - (clarifaiface.bottom_row * height)
+    }
+  }
+
+  displayFaceBox = (box)=>{
+    this.setState({box: box});
+  }
+
   onInputChange = (event) => {
-    console.log(event.target.value);
+    //console.log(event.target.value);
+    this.setState({input:event.target.value});
   }
   onButtonSubmit = () => {
-    app.models.predict('f76196b43bbd45c99b4f3cd8e8b40a8a',"https://www.maccosmetics.com.mx/media/export/cms/products/640x600/mac_sku_MW3A01_640x600_1.jpg").then(
-    function(response){
-      console.log(response);
-    },
-    function(err){
-
-    }
-    );
+    this.setState({imageUrl:this.state.input});
+    app.models
+    .predict(
+      Clarifai.FACE_DETECT_MODEL,
+      this.state.input)
+      .then(response=> this.displayFaceBox(this.calculateFaceLocation(response)))
+      .catch(err=>console.log(err))
   }
   render(){
   return (
     <div className="App">
-    <Particles className='particles'
-              params={particlesOptions} />
-    <Navigation/>
-    <Logo/>
-    <Rank/>
-    <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
-    {/*<FaceRecognition/>*/}
+      <Particles 
+        className='particles'
+        params={particlesOptions} />
+      <Navigation/>
+      <Logo/>
+      <Rank/>
+      <ImageLinkForm 
+        onInputChange={this.onInputChange} 
+        onButtonSubmit={this.onButtonSubmit}/>
+      <FaceRecognition 
+        imageUrl={this.state.imageUrl}/>
     </div>
   );
 }
